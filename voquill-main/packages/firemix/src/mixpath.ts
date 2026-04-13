@@ -1,0 +1,49 @@
+import { FiremixPath } from "@firemix/core";
+import {
+  Contact,
+  DatabaseMember,
+  DatabaseUser,
+  FlaggedAudio,
+  Nullable,
+  TermDoc,
+  ToneDoc,
+  Transcription,
+} from "@voquill/types";
+import { listify } from "@voquill/utilities";
+
+export const members = (
+  memberId?: Nullable<string>,
+): FiremixPath<DatabaseMember> => {
+  return ["members", ...listify(memberId)];
+};
+
+export const users = (userId?: Nullable<string>): FiremixPath<DatabaseUser> => {
+  return ["users", ...listify(userId)];
+};
+
+export const contacts = (
+  contactId?: Nullable<string>,
+): FiremixPath<Contact> => {
+  return ["contacts", ...listify(contactId)];
+};
+
+export const transcriptions = (
+  transcriptionId?: Nullable<string>,
+): FiremixPath<Transcription> => {
+  return ["transcriptions", ...listify(transcriptionId)];
+};
+
+export const termDocs = (userId: Nullable<string>): FiremixPath<TermDoc> => {
+  return ["termDocs", ...listify(userId)];
+};
+
+export const toneDocs = (userId: Nullable<string>): FiremixPath<ToneDoc> => {
+  return ["toneDocs", ...listify(userId)];
+};
+
+export const flaggedAudio = (
+  flaggedAudioId?: Nullable<string>,
+): FiremixPath<FlaggedAudio> => {
+  return ["flaggedAudio", ...listify(flaggedAudioId)];
+};
+
