@@ -3,8 +3,19 @@ import { getDb } from '../../db/connection';
 export interface UIComponent {
   id: string;
   type: 'stats_grid' | 'quick_actions' | 'banner' | 'header';
-  config: Record<string, unknown>;
+  config: Record<string, unknown> | StatsGridConfig | QuickActionsConfig | BannerConfig;
   order: number;
+}
+
+export interface StatsGridConfig {
+  title: string;
+  subtitle: string;
+  items: StatsItem[];
+}
+
+export interface QuickActionsConfig {
+  title: string;
+  items: QuickActionItem[];
 }
 
 export interface UIConfigResult {

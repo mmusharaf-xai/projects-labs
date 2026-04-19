@@ -85,7 +85,7 @@ export const updateUserProfile = async (
 
     await db
       .update(users)
-      .set(updateData)
+      .set(updateData as any)
       .where(eq(users.id, userId));
 
     return { success: true };
@@ -135,7 +135,7 @@ export const changePassword = async (
       .set({
         password: newPassword,
         updatedAt: new Date().toISOString(),
-      })
+      } as any)
       .where(eq(users.id, userId));
 
     return { success: true };

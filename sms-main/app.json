@@ -15,7 +15,8 @@
     "web": {},
     "scheme": "school-management-system",
     "plugins": [
-      "expo-sqlite"
+      "expo-sqlite",
+      "@react-native-community/datetimepicker"
     ]
   }
 }

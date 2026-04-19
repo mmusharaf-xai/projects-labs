@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import {
   View,
   Text,
@@ -14,51 +14,52 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../utils/colors';
+import Skeleton from '../shared/Skeleton';
 import {
   fetchSidebarConfig,
   SidebarMenuItem,
   SidebarConfig,
 } from '../../services/sidebarService';
 
-// Skeleton component for loading state
-const Skeleton: React.FC<{ width: number | string; height: number; borderRadius?: number }> = ({
-  width: w,
-  height,
-  borderRadius = 8,
-}) => {
-  const opacity = useRef(new Animated.Value(0.3)).current;
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.75;
 
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, {
-          toValue: 0.7,
-          duration: 750,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 0.3,
-          duration: 750,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-    animation.start();
-    return () => animation.stop();
-  }, []);
+// Menu Item Component
+interface MenuItemProps {
+  item: SidebarMenuItem;
+  isActive: boolean;
+  onPress: (item: SidebarMenuItem) => void;
+}
+
+const MenuItem: React.FC<MenuItemProps> = memo(({ item, isActive, onPress }) => {
+  const handlePress = useCallback(() => {
+    onPress(item);
+  }, [item, onPress]);
 
   return (
-    <Animated.View
-      style={[
-        styles.skeleton,
-        { width: w, height, borderRadius, opacity },
-      ]}
-    />
+    <TouchableOpacity
+      style={[styles.menuItem, isActive && styles.menuItemActive]}
+      onPress={handlePress}
+      activeOpacity={0.8}
+    >
+      <View style={[styles.iconContainer, isActive && styles.iconContainerActive]}>
+        <Ionicons
+          name={item.icon as any}
+          size={22}
+          color={isActive ? colors.white : colors.textSecondary}
+        />
+      </View>
+      <Text style={[styles.menuLabel, isActive && styles.menuLabelActive]}>
+        {item.label}
+      </Text>
+    </TouchableOpacity>
   );
-};
+});
+
+MenuItem.displayName = 'MenuItem';
 
 // Sidebar Skeleton Component
-const SidebarSkeleton: React.FC = () => {
+const SidebarSkeleton: React.FC = memo(() => {
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* Header Skeleton */}
@@ -93,10 +94,21 @@ const SidebarSkeleton: React.FC = () => {
       </View>
     </SafeAreaView>
   );
-};
+});
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.75;
+SidebarSkeleton.displayName = 'SidebarSkeleton';
+
+// Error Component
+const ErrorState: React.FC<{ error: string }> = memo(({ error }) => (
+  <SafeAreaView style={styles.safeArea}>
+    <View style={styles.errorContainer}>
+      <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
+      <Text style={styles.errorText}>{error}</Text>
+    </View>
+  </SafeAreaView>
+));
+
+ErrorState.displayName = 'ErrorState';
 
 interface SchoolSidebarProps {
   isVisible: boolean;
@@ -150,7 +162,6 @@ const SchoolSidebar: React.FC<SchoolSidebarProps> = ({
   // Handle open/close animations
   useEffect(() => {
     if (isVisible) {
-      // Open animation
       Animated.parallel([
         Animated.spring(translateX, {
           toValue: 0,
@@ -165,7 +176,6 @@ const SchoolSidebar: React.FC<SchoolSidebarProps> = ({
         }),
       ]).start();
     } else {
-      // Close animation
       Animated.parallel([
         Animated.timing(translateX, {
           toValue: -SIDEBAR_WIDTH,
@@ -182,24 +192,20 @@ const SchoolSidebar: React.FC<SchoolSidebarProps> = ({
   }, [isVisible]);
 
   // Pan responder for swipe to close
-  const panResponder = useRef(
+  const panResponder = useMemo(() => 
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Only respond to horizontal swipes from left edge or within sidebar
         return gestureState.dx < -10 && Math.abs(gestureState.dy) < 50;
       },
       onPanResponderMove: (_, gestureState) => {
-        // Only allow swiping left (negative dx)
         if (gestureState.dx < 0) {
           translateX.setValue(Math.max(-SIDEBAR_WIDTH, gestureState.dx));
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        // Close if swiped more than 30% of sidebar width
         if (gestureState.dx < -SIDEBAR_WIDTH * 0.3 || gestureState.vx < -0.5) {
           onClose();
         } else {
-          // Spring back to open
           Animated.spring(translateX, {
             toValue: 0,
             useNativeDriver: true,
@@ -207,51 +213,37 @@ const SchoolSidebar: React.FC<SchoolSidebarProps> = ({
           }).start();
         }
       },
-    })
-  ).current;
+    }),
+  [onClose]);
 
-  const handleMenuItemPress = (item: SidebarMenuItem) => {
+  const handleMenuItemPress = useCallback((item: SidebarMenuItem) => {
     onClose();
-    // Small delay to let close animation start
     setTimeout(() => {
-      if (item.route === 'SchoolSettings') {
-        onNavigate(item.route, { schoolId, schoolName: config?.schoolName });
-      } else {
-        onNavigate(item.route, { schoolId, schoolName: config?.schoolName });
-      }
+      onNavigate(item.route, { schoolId, schoolName: config?.schoolName });
     }, 150);
-  };
+  }, [onClose, onNavigate, schoolId, config?.schoolName]);
 
-  const handleBackToSchools = () => {
+  const handleBackToSchoolsPress = useCallback(() => {
     onClose();
     setTimeout(() => {
       onBackToSchools();
     }, 150);
-  };
+  }, [onClose, onBackToSchools]);
 
-  const renderMenuItem = (item: SidebarMenuItem) => {
-    const isActive = currentRoute === item.route;
-    
-    return (
-      <TouchableOpacity
-        key={item.id}
-        style={[styles.menuItem, isActive && styles.menuItemActive]}
-        onPress={() => handleMenuItemPress(item)}
-        activeOpacity={0.8}
-      >
-        <View style={[styles.iconContainer, isActive && styles.iconContainerActive]}>
-          <Ionicons
-            name={item.icon as any}
-            size={22}
-            color={isActive ? colors.white : colors.textSecondary}
-          />
-        </View>
-        <Text style={[styles.menuLabel, isActive && styles.menuLabelActive]}>
-          {item.label}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
+  const handleOverlayPress = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  const renderMenuItem = useCallback((item: SidebarMenuItem) => (
+    <MenuItem
+      key={item.id}
+      item={item}
+      isActive={currentRoute === item.route}
+      onPress={handleMenuItemPress}
+    />
+  ), [currentRoute, handleMenuItemPress]);
+
+  const schoolName = config?.schoolName || 'Loading...';
 
   if (!isVisible && !config) return null;
 
@@ -270,7 +262,7 @@ const SchoolSidebar: React.FC<SchoolSidebarProps> = ({
             { opacity: overlayOpacity },
           ]}
         >
-          <Pressable style={styles.overlayPressable} onPress={onClose} />
+          <Pressable style={styles.overlayPressable} onPress={handleOverlayPress} />
         </Animated.View>
 
         {/* Sidebar */}
@@ -284,12 +276,7 @@ const SchoolSidebar: React.FC<SchoolSidebarProps> = ({
           {loading ? (
             <SidebarSkeleton />
           ) : error ? (
-            <SafeAreaView style={styles.safeArea}>
-              <View style={styles.errorContainer}>
-                <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            </SafeAreaView>
+            <ErrorState error={error} />
           ) : (
             <SafeAreaView style={styles.safeArea}>
               {/* School Header */}
@@ -299,9 +286,7 @@ const SchoolSidebar: React.FC<SchoolSidebarProps> = ({
                 </View>
                 <View style={styles.schoolInfo}>
                   <Text style={styles.appName}>EduManager</Text>
-                  <Text style={styles.schoolName}>
-                    {config?.schoolName || 'Loading...'}
-                  </Text>
+                  <Text style={styles.schoolNameText}>{schoolName}</Text>
                 </View>
               </View>
 
@@ -316,7 +301,7 @@ const SchoolSidebar: React.FC<SchoolSidebarProps> = ({
               <View style={styles.bottomContainer}>
                 <TouchableOpacity
                   style={styles.backButton}
-                  onPress={handleBackToSchools}
+                  onPress={handleBackToSchoolsPress}
                   activeOpacity={0.8}
                 >
                   <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
@@ -332,9 +317,6 @@ const SchoolSidebar: React.FC<SchoolSidebarProps> = ({
 };
 
 const styles = StyleSheet.create({
-  skeleton: {
-    backgroundColor: '#e2e8f0',
-  },
   container: {
     flex: 1,
     flexDirection: 'row',
@@ -382,7 +364,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.textPrimary,
   },
-  schoolName: {
+  schoolNameText: {
     fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,

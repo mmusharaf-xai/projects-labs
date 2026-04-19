@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../../db/schema';
 
@@ -22,24 +22,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUserState] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadStoredUser();
-  }, []);
-
-  const loadStoredUser = async () => {
+  const loadStoredUser = useCallback(async () => {
     try {
       const storedUser = await AsyncStorage.getItem(USER_STORAGE_KEY);
       if (storedUser) {
         setCurrentUserState(JSON.parse(storedUser));
       }
     } catch (error) {
-      console.error('Error loading stored user:', error);
+      // Error loading stored user - continue without user
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const setCurrentUser = async (user: User | null) => {
+  useEffect(() => {
+    loadStoredUser();
+  }, [loadStoredUser]);
+
+  const setCurrentUser = useCallback(async (user: User | null) => {
     try {
       if (user) {
         await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
@@ -48,21 +48,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       setCurrentUserState(user);
     } catch (error) {
-      console.error('Error storing user:', error);
+      // Error storing user
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await setCurrentUser(null);
-  };
+  }, [setCurrentUser]);
 
-  const value: AuthContextType = {
+  const currentUserId = useMemo(() => currentUser?.id ?? null, [currentUser]);
+
+  const value: AuthContextType = useMemo(() => ({
     currentUser,
-    currentUserId: currentUser?.id ?? null,
+    currentUserId,
     setCurrentUser,
     logout,
     isLoading,
-  };
+  }), [currentUser, currentUserId, setCurrentUser, logout, isLoading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

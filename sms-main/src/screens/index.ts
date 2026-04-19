@@ -1,16 +1,29 @@
-export { default as LoginScreen } from './LoginScreen';
-export { default as SignupScreen } from './SignupScreen';
-export { default as HomeScreen } from './HomeScreen';
-export { default as AccountSettingsScreen } from './AccountSettingsScreen';
-export { default as RegisterSchoolScreen } from './RegisterSchoolScreen';
-export { default as QuickAccessScreen } from './QuickAccessScreen';
-export { default as SchoolSettingsScreen } from './SchoolSettingsScreen';
-export { default as OrganizationConfigScreen } from './OrganizationConfigScreen';
-export { default as CreateNewRoleScreen } from './CreateNewRoleScreen';
-export { default as RoleConfigScreen } from './RoleConfigScreen';
-export { default as ModulePermissionsScreen } from './ModulePermissionsScreen';
-export { default as ModuleFieldConfigScreen } from './ModuleFieldConfigScreen';
-export { default as GroupFieldListScreen } from './GroupFieldListScreen';
-export { default as AddCustomFieldScreen } from './AddCustomFieldScreen';
-export { default as StaffListingScreen } from './StaffListingScreen';
-export { default as AddStaffScreen } from './AddStaffScreen';
+// Auth screens
+export { LoginScreen } from './LoginScreen';
+export { SignupScreen } from './SignupScreen';
+
+// Home screens
+export { HomeScreen } from './HomeScreen';
+export { QuickAccessScreen } from './QuickAccessScreen';
+
+// Staff screens
+export { StaffListingScreen } from './StaffListingScreen';
+
+// Settings screens
+export { AccountSettingsScreen } from './AccountSettingsScreen';
+export { SchoolSettingsScreen } from './SchoolSettingsScreen';
+export { OrganizationConfigScreen } from './OrganizationConfigScreen';
+
+// Role management screens
+export { CreateNewRoleScreen } from './CreateNewRoleScreen';
+export { RoleConfigScreen } from './RoleConfigScreen';
+export { ModulePermissionsScreen } from './ModulePermissionsScreen';
+
+// Field config screens
+export { ModuleFieldConfigScreen } from './ModuleFieldConfigScreen';
+export { GroupFieldListScreen } from './GroupFieldListScreen';
+export { AddCustomFieldScreen } from './AddCustomFieldScreen';
+
+// Other screens
+export { RegisterSchoolScreen } from './RegisterSchoolScreen';
+export { AddStaffScreen } from './AddStaffScreen';

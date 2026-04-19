@@ -113,7 +113,7 @@ export const createSchool = async (
       userId: userId,
       schoolId: school.id,
       role: 'owner',
-    });
+    } as any);
 
     // Seed default modules for the new school
     await seedDefaultModules(school.id);
@@ -395,7 +395,7 @@ export const registerSchool = async (
       userId: userId,
       schoolId: school.id,
       role: 'owner',
-    });
+    } as any);
 
     // Seed default modules for the new school
     await seedDefaultModules(school.id);
