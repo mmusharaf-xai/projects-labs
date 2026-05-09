@@ -7,6 +7,7 @@ export interface AuthResult {
   success: boolean;
   user?: User;
   error?: string;
+  fieldErrors?: Record<string, string>;
 }
 
 export interface SignupResult {

@@ -37,7 +37,7 @@ const FormInput: React.FC<FormInputProps> = ({
         placeholderTextColor={colors.textMuted}
         {...textInputProps}
       />
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 };

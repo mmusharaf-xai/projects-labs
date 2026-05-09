@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../utils/colors';
 
@@ -26,7 +25,36 @@ interface FormDropdownProps {
   error?: string;
 }
 
-const FormDropdown: React.FC<FormDropdownProps> = ({
+// Option Item Component
+interface OptionItemProps {
+  option: DropdownOption;
+  isSelected: boolean;
+  onSelect: (option: DropdownOption) => void;
+}
+
+const OptionItem: React.FC<OptionItemProps> = memo(({ option, isSelected, onSelect }) => {
+  const handlePress = useCallback(() => {
+    onSelect(option);
+  }, [option, onSelect]);
+
+  return (
+    <TouchableOpacity
+      style={[styles.option, isSelected && styles.optionSelected]}
+      onPress={handlePress}
+    >
+      <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+        {option.label}
+      </Text>
+      {isSelected ? (
+        <Ionicons name="checkmark" size={20} color={colors.schoolAccent} />
+      ) : null}
+    </TouchableOpacity>
+  );
+});
+
+OptionItem.displayName = 'OptionItem';
+
+const FormDropdown: React.FC<FormDropdownProps> = memo(({
   label,
   value,
   options,
@@ -36,19 +64,41 @@ const FormDropdown: React.FC<FormDropdownProps> = ({
   error,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
-  const selectedOption = options.find((opt) => opt.value === value);
+  
+  const selectedOption = useMemo(() => 
+    options.find((opt) => opt.value === value),
+    [options, value]
+  );
 
-  const handleSelect = (option: DropdownOption) => {
+  const handleOpen = useCallback(() => {
+    setModalVisible(true);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setModalVisible(false);
+  }, []);
+
+  const handleSelect = useCallback((option: DropdownOption) => {
     onChange(option.value);
     setModalVisible(false);
-  };
+  }, [onChange]);
+
+  const renderOption = useCallback(({ item }: { item: DropdownOption }) => (
+    <OptionItem
+      option={item}
+      isSelected={item.value === value}
+      onSelect={handleSelect}
+    />
+  ), [value, handleSelect]);
+
+  const keyExtractor = useCallback((item: DropdownOption) => item.value, []);
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label ? <Text style={styles.label}>{label}</Text> : null}
       <TouchableOpacity
         style={[styles.dropdown, error && styles.dropdownError]}
-        onPress={() => setModalVisible(true)}
+        onPress={handleOpen}
         activeOpacity={0.7}
       >
         <Text
@@ -61,50 +111,30 @@ const FormDropdown: React.FC<FormDropdownProps> = ({
         </Text>
         <Ionicons name="chevron-down" size={20} color={colors.textMuted} />
       </TouchableOpacity>
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       <Modal
         visible={modalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={handleClose}
       >
         <TouchableOpacity
           style={styles.overlay}
           activeOpacity={1}
-          onPress={() => setModalVisible(false)}
+          onPress={handleClose}
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{label}</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity onPress={handleClose}>
                 <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             <FlatList
               data={options}
-              keyExtractor={(item) => item.value}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.option,
-                    item.value === value && styles.optionSelected,
-                  ]}
-                  onPress={() => handleSelect(item)}
-                >
-                  <Text
-                    style={[
-                      styles.optionText,
-                      item.value === value && styles.optionTextSelected,
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                  {item.value === value && (
-                    <Ionicons name="checkmark" size={20} color={colors.schoolAccent} />
-                  )}
-                </TouchableOpacity>
-              )}
+              keyExtractor={keyExtractor}
+              renderItem={renderOption}
               style={styles.list}
             />
           </View>
@@ -112,7 +142,9 @@ const FormDropdown: React.FC<FormDropdownProps> = ({
       </Modal>
     </View>
   );
-};
+});
+
+FormDropdown.displayName = 'FormDropdown';
 
 const styles = StyleSheet.create({
   container: {

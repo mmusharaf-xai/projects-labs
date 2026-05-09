@@ -10,3 +10,4 @@ export { default as SearchBar } from './SearchBar';
 export { default as ActionButton } from './ActionButton';
 export { default as SchoolCard } from './SchoolCard';
 export { default as FormBuilder } from './FormBuilder';
+export { default as Skeleton } from './Skeleton';

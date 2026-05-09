@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,8 +36,7 @@ interface GroupWithFields extends FieldGroupData {
   fields: FieldConfigData[];
 }
 
-// ── DateField sub-component (encapsulates its own hooks) ──────────────────
-
+// DateField sub-component
 interface DateFieldProps {
   field: FieldConfigData;
   value: string;
@@ -46,36 +44,40 @@ interface DateFieldProps {
   onChange: (value: string) => void;
 }
 
-const DateField: React.FC<DateFieldProps> = ({ field, value, error, onChange }) => {
+const DateField: React.FC<DateFieldProps> = memo(({ field, value, error, onChange }) => {
   // Check config for time support
-  let showTime = false;
-  try {
-    const cfg = field.config as any;
-    showTime = !!cfg?.showTime;
-  } catch {}
+  const showTime = useMemo(() => {
+    try {
+      const cfg = field.config as any;
+      return !!cfg?.showTime;
+    } catch {
+      return false;
+    }
+  }, [field.config]);
 
   // Parse existing value or use current date
-  let initialDate = new Date();
-  if (value) {
-    const parsed = new Date(value);
-    if (!isNaN(parsed.getTime())) {
-      initialDate = parsed;
+  const initialDate = useMemo(() => {
+    if (value) {
+      const parsed = new Date(value);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
     }
-  }
+    return new Date();
+  }, [value]);
 
   const [showPicker, setShowPicker] = useState(false);
   const [pickerDate, setPickerDate] = useState(initialDate);
 
-  const formatDate = (d: Date) => {
+  const formatDate = useCallback((d: Date) => {
     if (showTime) {
       const pad = (n: number) => String(n).padStart(2, '0');
       return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
     return d.toISOString().slice(0, 10);
-  };
+  }, [showTime]);
 
-  const onPick = (event: any, selectedDate?: Date) => {
-    // On Android, hide picker after selection; on iOS, keep open until user taps elsewhere
+  const onPick = useCallback((event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
       setShowPicker(false);
     }
@@ -83,7 +85,11 @@ const DateField: React.FC<DateFieldProps> = ({ field, value, error, onChange }) 
       setPickerDate(selectedDate);
       onChange(formatDate(selectedDate));
     }
-  };
+  }, [onChange, formatDate]);
+
+  const handleOpenPicker = useCallback(() => {
+    setShowPicker(true);
+  }, []);
 
   const displayValue = value || (showTime ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD');
 
@@ -92,7 +98,7 @@ const DateField: React.FC<DateFieldProps> = ({ field, value, error, onChange }) 
       <Text style={styles.fieldLabel}>{field.name}</Text>
       <TouchableOpacity
         style={[styles.datePickerButton, error && styles.datePickerButtonError]}
-        onPress={() => setShowPicker(true)}
+        onPress={handleOpenPicker}
         activeOpacity={0.7}
       >
         <Text style={[styles.datePickerText, !value && styles.datePickerPlaceholder]}>
@@ -100,23 +106,24 @@ const DateField: React.FC<DateFieldProps> = ({ field, value, error, onChange }) 
         </Text>
         <Ionicons name="calendar-outline" size={20} color={colors.textMuted} />
       </TouchableOpacity>
-      {error && <Text style={styles.fieldErrorText}>{error}</Text>}
+      {error ? <Text style={styles.fieldErrorText}>{error}</Text> : null}
 
-      {showPicker && (
+      {showPicker ? (
         <DateTimePicker
           value={pickerDate}
-          mode={showTime ? 'datetime' : 'date'}
+          mode={(Platform.OS === 'ios' && showTime ? 'datetime' : 'date') as any}
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onValueChange={onPick}
+          onChange={onPick}
         />
-      )}
+      ) : null}
     </View>
   );
-};
+});
 
-// ── Main FormBuilder ──────────────────────────────────────────────────────
+DateField.displayName = 'DateField';
 
-const FormBuilder: React.FC<FormBuilderProps> = ({
+// Main FormBuilder
+const FormBuilder: React.FC<FormBuilderProps> = memo(({
   schoolId,
   moduleKey,
   title = 'Add Record',
@@ -142,14 +149,20 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
       return;
     }
 
-    const groupsWithFields: GroupWithFields[] = [];
-    for (const group of groupsResult.groups) {
-      const fieldsResult = await fetchGroupFields(group.id);
-      groupsWithFields.push({
-        ...group,
-        fields: fieldsResult.success && fieldsResult.fields ? fieldsResult.fields : [],
-      });
-    }
+    // Fetch all group fields in parallel (rule: async-parallel)
+    const fieldsPromises = groupsResult.groups.map(group =>
+      fetchGroupFields(group.id)
+        .then(result => ({
+          ...group,
+          fields: result.success && result.fields ? result.fields : [],
+        }))
+        .catch(() => ({
+          ...group,
+          fields: [],
+        }))
+    );
+
+    const groupsWithFields = await Promise.all(fieldsPromises);
 
     // Sort groups and fields by displayOrder
     groupsWithFields.sort((a, b) => a.displayOrder - b.displayOrder);
@@ -165,17 +178,18 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
     loadFormConfig();
   }, [loadFormConfig]);
 
-  const handleFieldChange = (fieldName: string, value: string) => {
+  const handleFieldChange = useCallback((fieldName: string, value: string) => {
     setFormValues((prev) => ({ ...prev, [fieldName]: value }));
-    if (formErrors[fieldName]) {
-      setFormErrors((prev) => {
+    setFormErrors((prev) => {
+      if (prev[fieldName]) {
         const { [fieldName]: _, ...rest } = prev;
         return rest;
-      });
-    }
-  };
+      }
+      return prev;
+    });
+  }, []);
 
-  const validateForm = (): boolean => {
+  const validateForm = useCallback((): boolean => {
     const errors: Record<string, string> = {};
 
     groups.forEach((group) => {
@@ -191,9 +205,9 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  }, [groups, formValues]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!validateForm()) {
       Alert.alert('Validation Error', 'Please fix the errors before saving.');
       return;
@@ -206,9 +220,19 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
     if (!result.success) {
       Alert.alert('Save Failed', result.error || 'Could not save. Please try again.');
     }
-  };
+  }, [validateForm, onSave, formValues]);
 
-  const renderField = (field: FieldConfigData) => {
+  const handleCancelPress = useCallback(() => {
+    if (onCancel) {
+      onCancel();
+    }
+  }, [onCancel]);
+
+  const handleRetry = useCallback(() => {
+    loadFormConfig();
+  }, [loadFormConfig]);
+
+  const renderField = useCallback((field: FieldConfigData) => {
     const value = formValues[field.name] || '';
     const error = formErrors[field.name];
 
@@ -253,7 +277,6 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
     }
 
     if (field.fieldType === 'Date') {
-      // Delegate to DateField component to avoid conditional hooks
       return (
         <DateField
           key={field.id}
@@ -277,7 +300,21 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
         containerStyle={styles.fieldContainer}
       />
     );
-  };
+  }, [formValues, formErrors, handleFieldChange]);
+
+  const renderGroup = useCallback((group: GroupWithFields) => (
+    <View key={group.id} style={styles.groupCard}>
+      <View style={styles.groupHeader}>
+        <Ionicons name={(group.icon as any) || 'folder-open'} size={20} color={colors.schoolNavy} />
+        <Text style={styles.groupTitle}>{group.name}</Text>
+      </View>
+      {group.fields.length === 0 ? (
+        <Text style={styles.noFieldsText}>No fields in this group.</Text>
+      ) : (
+        group.fields.map(renderField)
+      )}
+    </View>
+  ), [renderField]);
 
   if (loading) {
     return (
@@ -296,7 +333,7 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
           <Text style={styles.errorText}>{fetchError}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadFormConfig}>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
             <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -312,11 +349,11 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
       >
         {/* Header with Save button */}
         <View style={styles.header}>
-          {onCancel && (
-            <TouchableOpacity onPress={onCancel} style={styles.headerButton}>
+          {onCancel ? (
+            <TouchableOpacity onPress={handleCancelPress} style={styles.headerButton}>
               <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
-          )}
+          ) : null}
           <Text style={styles.headerTitle}>{title}</Text>
           <TouchableOpacity
             style={[styles.saveButton, saving && styles.saveButtonDisabled]}
@@ -337,25 +374,15 @@ const FormBuilder: React.FC<FormBuilderProps> = ({
               <Text style={styles.emptyText}>No fields configured for this module.</Text>
             </View>
           ) : (
-            groups.map((group) => (
-              <View key={group.id} style={styles.groupCard}>
-                <View style={styles.groupHeader}>
-                  <Ionicons name={(group.icon as any) || 'folder-open'} size={20} color={colors.schoolNavy} />
-                  <Text style={styles.groupTitle}>{group.name}</Text>
-                </View>
-                {group.fields.length === 0 ? (
-                  <Text style={styles.noFieldsText}>No fields in this group.</Text>
-                ) : (
-                  group.fields.map(renderField)
-                )}
-              </View>
-            ))
+            groups.map(renderGroup)
           )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-};
+});
+
+FormBuilder.displayName = 'FormBuilder';
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },

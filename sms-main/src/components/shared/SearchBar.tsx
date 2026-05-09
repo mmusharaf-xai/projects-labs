@@ -41,11 +41,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
         placeholderTextColor={colors.textMuted}
         {...textInputProps}
       />
-      {value && value.length > 0 && (
+      {value && value.length > 0 ? (
         <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
           <Ionicons name="close-circle" size={20} color={colors.textMuted} />
         </TouchableOpacity>
-      )}
+      ) : null}
     </View>
   );
 };
