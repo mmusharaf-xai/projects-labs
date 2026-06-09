@@ -68,12 +68,14 @@ const AuthForm: React.FC = memo(() => {
       <View style={styles.toggleContainer}>
         <View style={[styles.toggleTrack, { backgroundColor: colors.surface, borderColor: colors.surfaceBorder }]}>
           <TouchableOpacity
+            testID="login-toggle"
             style={[styles.toggleBtn, { backgroundColor: isLogin ? colors.primary : 'transparent' }]}
             onPress={() => setIsLogin(true)}
           >
             <Text style={[styles.toggleText, { color: isLogin ? 'white' : colors.textSecondary }]}>Login</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            testID="signup-toggle"
             style={[styles.toggleBtn, { backgroundColor: !isLogin ? colors.primary : 'transparent' }]}
             onPress={() => setIsLogin(false)}
           >
@@ -99,6 +101,7 @@ const AuthForm: React.FC = memo(() => {
               <View style={styles.inputWrapper}>
                 <MaterialIcons name="account-circle" size={20} color={colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
+                  testID="username-input"
                   style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.inputBorder, color: colors.textPrimary }]}
                   placeholder="PitchKing"
                   placeholderTextColor={colors.textMuted}
@@ -114,6 +117,7 @@ const AuthForm: React.FC = memo(() => {
             <View style={styles.inputWrapper}>
               <MaterialIcons name="alternate-email" size={20} color={colors.textSecondary} style={styles.inputIcon} />
               <TextInput
+                testID="email-input"
                 style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.inputBorder, color: colors.textPrimary }]}
                 placeholder="player@stadium.com"
                 placeholderTextColor={colors.textMuted}
@@ -130,6 +134,7 @@ const AuthForm: React.FC = memo(() => {
             <View style={styles.inputWrapper}>
               <MaterialIcons name="lock" size={20} color={colors.textSecondary} style={styles.inputIcon} />
               <TextInput
+                testID="password-input"
                 style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.inputBorder, color: colors.textPrimary }]}
                 placeholder="Your secret code"
                 placeholderTextColor={colors.textMuted}
@@ -149,6 +154,7 @@ const AuthForm: React.FC = memo(() => {
       {/* Button */}
       <View style={styles.buttonSection}>
         <TouchableOpacity
+          testID="submit-button"
           style={[styles.submitBtn, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
           onPress={handleSubmit}
         >

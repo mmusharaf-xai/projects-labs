@@ -1,0 +1,36 @@
+appId: host.exp.Exponent
+name: Signup Flow
+---
+
+# Verify we're on the auth screen
+- assertVisible: "HandCricket"
+
+# Switch to signup tab
+- tapOn:
+    id: "signup-toggle"
+
+# Fill in username
+- tapOn:
+    id: "username-input"
+- inputText: "TestPlayer"
+- pressKey: "Enter"
+
+# Fill in email
+- tapOn:
+    id: "email-input"
+- inputText: "testplayer@e2e.com"
+- pressKey: "Enter"
+
+# Fill in password
+- tapOn:
+    id: "password-input"
+- inputText: "Test@1234"
+- pressKey: "Enter"
+
+# Submit
+- tapOn:
+    id: "submit-button"
+
+# Verify we land on the home screen
+- assertVisible: "TestPlayer"
+- assertVisible: "Bot Match"
