@@ -1,0 +1,1 @@
+export { default as GameCompletionScreen } from './GameCompletionScreen';
