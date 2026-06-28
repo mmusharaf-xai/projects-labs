@@ -74,6 +74,7 @@ const LoginForm: React.FC<LoginFormProps> = memo(({ onLoginSuccess, onNavigateTo
         autoCapitalize="none"
         autoComplete="email"
         error={errors.email}
+        testID="email-input"
       />
 
       <FormInput
@@ -85,6 +86,7 @@ const LoginForm: React.FC<LoginFormProps> = memo(({ onLoginSuccess, onNavigateTo
         autoComplete="password"
         error={errors.password}
         containerStyle={styles.inputSpacing}
+        testID="password-input"
       />
 
       <View style={styles.submitContainer}>
@@ -92,6 +94,7 @@ const LoginForm: React.FC<LoginFormProps> = memo(({ onLoginSuccess, onNavigateTo
           title="Log In"
           onPress={handleLogin}
           loading={loading}
+          testID="login-button"
         />
       </View>
 
@@ -99,7 +102,7 @@ const LoginForm: React.FC<LoginFormProps> = memo(({ onLoginSuccess, onNavigateTo
 
       <View style={styles.signupContainer}>
         <Text style={styles.signupText}>Don't have an account?</Text>
-        <TouchableOpacity onPress={handleSignupPress}>
+        <TouchableOpacity onPress={handleSignupPress} testID="navigate-signup">
           <Text style={styles.signupLink}> Sign Up</Text>
         </TouchableOpacity>
       </View>

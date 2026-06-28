@@ -390,6 +390,7 @@ const AccountSettingsScreen: React.FC<AccountSettingsScreenProps> = ({ navigatio
               style={styles.logoutButton}
               onPress={handleLogout}
               activeOpacity={0.7}
+              testID="logout-button"
             >
               <Ionicons name="log-out-outline" size={20} color={colors.error} />
               <Text style={styles.logoutText}>Log Out</Text>

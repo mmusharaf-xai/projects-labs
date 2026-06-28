@@ -1,0 +1,6 @@
+# Maestro E2E config for SchoolManagementSystem
+# Run: maestro test e2e/flows/
+# Docs: https://maestro.mobile.dev
+
+appId: host.exp.Exponent
+name: SchoolManagementSystem E2E Tests

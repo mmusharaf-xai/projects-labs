@@ -115,6 +115,7 @@ const HomeScreenContent: React.FC<HomeScreenContentProps> = memo(({ navigation }
         <TouchableOpacity 
           style={styles.accountButton}
           onPress={handleNavigateToAccountSettings}
+          testID="account-settings-button"
         >
           <Ionicons name="person-circle" size={28} color={colors.schoolNavy} />
         </TouchableOpacity>

@@ -69,6 +69,7 @@ const SignupForm: React.FC<SignupFormProps> = memo(({ onSignupSuccess }) => {
         autoCapitalize="words"
         autoComplete="name"
         error={errors.fullName}
+        testID="fullname-input"
       />
 
       <FormInput
@@ -81,6 +82,7 @@ const SignupForm: React.FC<SignupFormProps> = memo(({ onSignupSuccess }) => {
         autoComplete="email"
         error={errors.email}
         containerStyle={styles.inputSpacing}
+        testID="email-input"
       />
 
       <FormInput
@@ -92,6 +94,7 @@ const SignupForm: React.FC<SignupFormProps> = memo(({ onSignupSuccess }) => {
         autoComplete="password-new"
         error={errors.password}
         containerStyle={styles.inputSpacing}
+        testID="password-input"
       />
 
       <View style={styles.submitContainer}>
@@ -99,6 +102,7 @@ const SignupForm: React.FC<SignupFormProps> = memo(({ onSignupSuccess }) => {
           title="Sign Up"
           onPress={handleSignup}
           loading={loading}
+          testID="signup-button"
         />
       </View>
 
